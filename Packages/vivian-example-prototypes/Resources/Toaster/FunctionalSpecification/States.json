@@ -243,6 +243,12 @@
           "InteractionElement": "Handle",
           "Attribute": "VALUE",
           "Value": "0.0"
+        },
+        {
+          "Type": "InteractionElementCondition",
+          "InteractionElement": "Handle2",
+          "Attribute": "VALUE",
+          "Value": "0.0"
         }
       ]
     }
