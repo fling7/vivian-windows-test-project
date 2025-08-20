@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 
 public class GenerateInteractionsWindow : EditorWindow
 {
@@ -13,11 +14,33 @@ public class GenerateInteractionsWindow : EditorWindow
         GetWindow<GenerateInteractionsWindow>(true, "generate interactions");
     }
 
+    private enum Step
+    {
+        SelectObjects,
+        DefineInteractionElements
+    }
+
+    private Step _currentStep = Step.SelectObjects;
     private Vector2 _scrollPos;
     private readonly Dictionary<GameObject, bool> _selection = new Dictionary<GameObject, bool>();
+    private readonly Dictionary<GameObject, int> _interactionSelection = new Dictionary<GameObject, int>();
+    private readonly string[] _interactionTypes = { "Button", "ToggleButton", "Slider", "Rotatable", "TouchArea", "Movable" };
+    private readonly List<GameObject> _selectedObjects = new List<GameObject>();
     private string _groupName = string.Empty;
 
     private void OnGUI()
+    {
+        if (_currentStep == Step.SelectObjects)
+        {
+            DrawSelectionStep();
+        }
+        else if (_currentStep == Step.DefineInteractionElements)
+        {
+            DrawInteractionElementsStep();
+        }
+    }
+
+    private void DrawSelectionStep()
     {
         EditorGUILayout.LabelField("GameObjects in Active Scene", EditorStyles.boldLabel);
 
@@ -63,29 +86,60 @@ public class GenerateInteractionsWindow : EditorWindow
         EditorGUILayout.Space();
         _groupName = EditorGUILayout.TextField("Group Name", _groupName);
 
-        if (GUILayout.Button("Create Interaction Objects"))
+        if (GUILayout.Button("Next"))
         {
-            CreateInteractionObjects();
+            PrepareInteractionDefinition();
         }
     }
 
-    private void CreateInteractionObjects()
+    private void DrawInteractionElementsStep()
     {
-        var selected = new List<GameObject>();
+        EditorGUILayout.LabelField("Define Interaction Elements", EditorStyles.boldLabel);
+        foreach (var go in _selectedObjects)
+        {
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField(go.name, GUILayout.Width(200));
+            int current = _interactionSelection.ContainsKey(go) ? _interactionSelection[go] : 0;
+            int selected = EditorGUILayout.Popup(current, _interactionTypes);
+            _interactionSelection[go] = selected;
+            EditorGUILayout.EndHorizontal();
+        }
+
+        if (GUILayout.Button("Create Interaction Objects"))
+        {
+            CreateInteractionObjects();
+            _currentStep = Step.SelectObjects;
+        }
+    }
+
+    private void PrepareInteractionDefinition()
+    {
+        _selectedObjects.Clear();
         foreach (var kv in _selection)
         {
             if (kv.Value)
             {
-                selected.Add(kv.Key);
+                _selectedObjects.Add(kv.Key);
             }
         }
 
-        if (selected.Count == 0 || string.IsNullOrEmpty(_groupName))
+        if (_selectedObjects.Count == 0 || string.IsNullOrEmpty(_groupName))
         {
             Debug.LogWarning("No objects selected or group name empty.");
             return;
         }
 
+        _interactionSelection.Clear();
+        foreach (var go in _selectedObjects)
+        {
+            _interactionSelection[go] = 0;
+        }
+
+        _currentStep = Step.DefineInteractionElements;
+    }
+
+    private void CreateInteractionObjects()
+    {
         string basePath = "Assets/Interactionsobjects";
         string groupPath = Path.Combine(basePath, _groupName);
         string prefabFolder = Path.Combine(groupPath, "Prefabs");
@@ -98,13 +152,32 @@ public class GenerateInteractionsWindow : EditorWindow
         Directory.CreateDirectory(texturesFolder);
         Directory.CreateDirectory(specFolder);
         string specFile = Path.Combine(specFolder, "InteractionElements.json");
-        if (!File.Exists(specFile))
+
+        var json = new StringBuilder();
+        json.AppendLine("{");
+        json.AppendLine("    \"Elements\": [");
+
+        for (int i = 0; i < _selectedObjects.Count; i++)
         {
-            File.WriteAllText(specFile, "{}");
+            var go = _selectedObjects[i];
+            string type = _interactionTypes[_interactionSelection[go]];
+            json.Append(BuildElementJson(go.name, type));
+            if (i < _selectedObjects.Count - 1)
+            {
+                json.AppendLine(",");
+            }
+            else
+            {
+                json.AppendLine();
+            }
         }
 
+        json.AppendLine("    ]");
+        json.AppendLine("}");
+        File.WriteAllText(specFile, json.ToString());
+
         GameObject root = new GameObject(_groupName);
-        foreach (var go in selected)
+        foreach (var go in _selectedObjects)
         {
             GameObject copy = Instantiate(go);
             copy.transform.SetParent(root.transform, true);
@@ -119,6 +192,31 @@ public class GenerateInteractionsWindow : EditorWindow
         PrefabUtility.InstantiatePrefab(prefabAsset);
     }
 
+    private string BuildElementJson(string name, string type)
+    {
+        switch (type)
+        {
+            case "ToggleButton":
+                return
+$"        {{\n            \"Type\": \"ToggleButton\",\n            \"Name\": \"{name}\",\n            \"InitialAttributeValues\": [\n                {{ \"Attribute\": \"VALUE\", \"Value\": \"false\" }}\n            ]\n        }}";
+            case "Slider":
+                return
+$"        {{\n            \"Type\": \"Slider\",\n            \"Name\": \"{name}\",\n            \"MinPosition\": {{ \"x\": 0.0, \"y\": 0.0, \"z\": 0.0 }},\n            \"MaxPosition\": {{ \"x\": 0.0, \"y\": 0.0, \"z\": 0.0 }},\n            \"InitialAttributeValues\": [\n                {{ \"Attribute\": \"VALUE\", \"Value\": \"0.0\" }},\n                {{ \"Attribute\": \"FIXED\", \"Value\": \"false\" }}\n            ],\n            \"PositionResolution\": 0,\n            \"TransitionTimeInMs\": 0\n        }}";
+            case "Rotatable":
+                return
+$"        {{\n            \"Type\": \"Rotatable\",\n            \"Name\": \"{name}\",\n            \"MinRotation\": 0.0,\n            \"MaxRotation\": 0.0,\n            \"RotationAxis\": {{\n                \"Origin\": {{ \"x\": 0.0, \"y\": 0.0, \"z\": 0.0 }},\n                \"Direction\": {{ \"x\": 0.0, \"y\": 0.0, \"z\": 1.0 }}\n            }},\n            \"InitialAttributeValues\": [\n                {{ \"Attribute\": \"VALUE\", \"Value\": \"0.0\" }},\n                {{ \"Attribute\": \"FIXED\", \"Value\": \"false\" }}\n            ],\n            \"PositionResolution\": 0,\n            \"AllowsForInfiniteRotation\": false,\n            \"TransitionTimeInMs\": 0\n        }}";
+            case "TouchArea":
+                return
+$"        {{\n            \"Type\": \"TouchArea\",\n            \"Name\": \"{name}\",\n            \"Plane\": {{ \"x\": 0.0, \"y\": 0.0, \"z\": 1.0 }},\n            \"Resolution\": {{ \"x\": 0.0, \"y\": 0.0 }}\n        }}";
+            case "Movable":
+                return
+$"        {{\n            \"Type\": \"Movable\",\n            \"Name\": \"{name}\",\n            \"InitialAttributeValues\": [\n                {{ \"Attribute\": \"POSITION\", \"Value\": \"(0.0,0.0,0.0)\" }},\n                {{ \"Attribute\": \"ROTATION\", \"Value\": \"(0.0,0.0,0.0)\" }}\n            ],\n            \"SnapPoses\": [],\n            \"TransitionTimeInMs\": 0\n        }}";
+            default:
+                return
+$"        {{\n            \"Type\": \"Button\",\n            \"Name\": \"{name}\"\n        }}";
+        }
+    }
+
     private void CollectChildren(GameObject go, List<GameObject> list)
     {
         list.Add(go);
@@ -129,3 +227,4 @@ public class GenerateInteractionsWindow : EditorWindow
     }
 }
 #endif
+
