@@ -140,7 +140,7 @@ public class GenerateInteractionsWindow : EditorWindow
 
     private void CreateInteractionObjects()
     {
-        string basePath = "Assets/Interactionsobjects";
+        string basePath = "Packages/vivian-example-prototypes/Resources/Interactionsobjects";
         string groupPath = Path.Combine(basePath, _groupName);
         string prefabFolder = Path.Combine(groupPath, "Prefabs");
         string materialsFolder = Path.Combine(groupPath, "Materials");
