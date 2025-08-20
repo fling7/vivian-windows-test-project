@@ -5,6 +5,7 @@ using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Diagnostics;
 
 public class GenerateInteractionsWindow : EditorWindow
 {
@@ -27,6 +28,7 @@ public class GenerateInteractionsWindow : EditorWindow
     private readonly string[] _interactionTypes = { "Button", "ToggleButton", "Slider", "Rotatable", "TouchArea", "Movable" };
     private readonly List<GameObject> _selectedObjects = new List<GameObject>();
     private string _groupName = string.Empty;
+    private string _interactionDescription = string.Empty;
 
     private void OnGUI()
     {
@@ -104,6 +106,10 @@ public class GenerateInteractionsWindow : EditorWindow
             _interactionSelection[go] = selected;
             EditorGUILayout.EndHorizontal();
         }
+
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("Interaction Description", EditorStyles.boldLabel);
+        _interactionDescription = EditorGUILayout.TextArea(_interactionDescription, GUILayout.MinHeight(60));
 
         if (GUILayout.Button("Create Interaction Objects"))
         {
@@ -190,6 +196,49 @@ public class GenerateInteractionsWindow : EditorWindow
         AssetDatabase.Refresh();
         var prefabAsset = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
         PrefabUtility.InstantiatePrefab(prefabAsset);
+
+        RunPythonGenerator(specFolder);
+    }
+
+    private void RunPythonGenerator(string specFolder)
+    {
+        string scriptPath = Path.Combine(Application.dataPath, "..", "generate_interactions.py");
+        if (!File.Exists(scriptPath))
+        {
+            Debug.LogError($"Script not found at {scriptPath}");
+            return;
+        }
+        string python = "python";
+        string escapedDesc = _interactionDescription.Replace("\"", "\\\"");
+        var psi = new ProcessStartInfo
+        {
+            FileName = python,
+            Arguments = $"\"{scriptPath}\" --spec-dir \"{specFolder}\" --description \"{escapedDesc}\"",
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true
+        };
+        try
+        {
+            using (var proc = Process.Start(psi))
+            {
+                proc.WaitForExit();
+                string output = proc.StandardOutput.ReadToEnd();
+                if (!string.IsNullOrEmpty(output))
+                {
+                    Debug.Log(output);
+                }
+                if (proc.ExitCode != 0)
+                {
+                    Debug.LogError(proc.StandardError.ReadToEnd());
+                }
+            }
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"Failed to run python script: {e.Message}");
+        }
     }
 
     private string BuildElementJson(string name, string type)
