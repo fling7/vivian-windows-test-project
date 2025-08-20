@@ -3,7 +3,8 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
-using System.Threading.Tasks;
+using System.IO;
+using System.Text;
 
 public class GenerateInteractionsWindow : EditorWindow
 {
@@ -16,8 +17,7 @@ public class GenerateInteractionsWindow : EditorWindow
     private enum Step
     {
         SelectObjects,
-        DefineInteractionElements,
-        DescribeInteractions
+        DefineInteractionElements
     }
 
     private Step _currentStep = Step.SelectObjects;
@@ -27,7 +27,6 @@ public class GenerateInteractionsWindow : EditorWindow
     private readonly string[] _interactionTypes = { "Button", "ToggleButton", "Slider", "Rotatable", "TouchArea", "Movable" };
     private readonly List<GameObject> _selectedObjects = new List<GameObject>();
     private string _groupName = string.Empty;
-    private string _description = string.Empty;
 
     private void OnGUI()
     {
@@ -38,10 +37,6 @@ public class GenerateInteractionsWindow : EditorWindow
         else if (_currentStep == Step.DefineInteractionElements)
         {
             DrawInteractionElementsStep();
-        }
-        else if (_currentStep == Step.DescribeInteractions)
-        {
-            DrawDescriptionStep();
         }
     }
 
@@ -110,9 +105,10 @@ public class GenerateInteractionsWindow : EditorWindow
             EditorGUILayout.EndHorizontal();
         }
 
-        if (GUILayout.Button("Next"))
+        if (GUILayout.Button("Create Interaction Objects"))
         {
-            _currentStep = Step.DescribeInteractions;
+            CreateInteractionObjects();
+            _currentStep = Step.SelectObjects;
         }
     }
 
@@ -142,27 +138,82 @@ public class GenerateInteractionsWindow : EditorWindow
         _currentStep = Step.DefineInteractionElements;
     }
 
-    private void DrawDescriptionStep()
+    private void CreateInteractionObjects()
     {
-        EditorGUILayout.LabelField("Describe Interactions", EditorStyles.boldLabel);
-        _description = EditorGUILayout.TextArea(_description, GUILayout.Height(100));
+        string basePath = "Packages/vivian-example-prototypes/Resources";
+        string groupPath = Path.Combine(basePath, _groupName);
+        string prefabFolder = Path.Combine(groupPath, "Prefabs");
+        string materialsFolder = Path.Combine(groupPath, "Materials");
+        string texturesFolder = Path.Combine(groupPath, "Textures");
+        string specFolder = Path.Combine(groupPath, "FunctionalSpecification");
 
-        if (GUILayout.Button("Generate"))
+        Directory.CreateDirectory(prefabFolder);
+        Directory.CreateDirectory(materialsFolder);
+        Directory.CreateDirectory(texturesFolder);
+        Directory.CreateDirectory(specFolder);
+        string specFile = Path.Combine(specFolder, "InteractionElements.json");
+
+        var json = new StringBuilder();
+        json.AppendLine("{");
+        json.AppendLine("    \"Elements\": [");
+
+        for (int i = 0; i < _selectedObjects.Count; i++)
         {
-            GenerateFromDescription();
+            var go = _selectedObjects[i];
+            string type = _interactionTypes[_interactionSelection[go]];
+            json.Append(BuildElementJson(go.name, type));
+            if (i < _selectedObjects.Count - 1)
+            {
+                json.AppendLine(",");
+            }
+            else
+            {
+                json.AppendLine();
+            }
         }
+
+        json.AppendLine("    ]");
+        json.AppendLine("}");
+        File.WriteAllText(specFile, json.ToString());
+
+        GameObject root = new GameObject(_groupName);
+        foreach (var go in _selectedObjects)
+        {
+            GameObject copy = Instantiate(go);
+            copy.transform.SetParent(root.transform, true);
+        }
+
+        string prefabPath = Path.Combine(prefabFolder, _groupName + ".prefab");
+        PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
+        DestroyImmediate(root);
+
+        AssetDatabase.Refresh();
+        var prefabAsset = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+        PrefabUtility.InstantiatePrefab(prefabAsset);
     }
 
-    private async void GenerateFromDescription()
+    private string BuildElementJson(string name, string type)
     {
-        try
+        switch (type)
         {
-            await InteractionGenerationService.GenerateAsync(_selectedObjects, _interactionSelection, _interactionTypes, _groupName, _description);
-            _currentStep = Step.SelectObjects;
-        }
-        catch (System.Exception ex)
-        {
-            Debug.LogError(ex.Message);
+            case "ToggleButton":
+                return
+$"        {{\n            \"Type\": \"ToggleButton\",\n            \"Name\": \"{name}\",\n            \"InitialAttributeValues\": [\n                {{ \"Attribute\": \"VALUE\", \"Value\": \"false\" }}\n            ]\n        }}";
+            case "Slider":
+                return
+$"        {{\n            \"Type\": \"Slider\",\n            \"Name\": \"{name}\",\n            \"MinPosition\": {{ \"x\": 0.0, \"y\": 0.0, \"z\": 0.0 }},\n            \"MaxPosition\": {{ \"x\": 0.0, \"y\": 0.0, \"z\": 0.0 }},\n            \"InitialAttributeValues\": [\n                {{ \"Attribute\": \"VALUE\", \"Value\": \"0.0\" }},\n                {{ \"Attribute\": \"FIXED\", \"Value\": \"false\" }}\n            ],\n            \"PositionResolution\": 0,\n            \"TransitionTimeInMs\": 0\n        }}";
+            case "Rotatable":
+                return
+$"        {{\n            \"Type\": \"Rotatable\",\n            \"Name\": \"{name}\",\n            \"MinRotation\": 0.0,\n            \"MaxRotation\": 0.0,\n            \"RotationAxis\": {{\n                \"Origin\": {{ \"x\": 0.0, \"y\": 0.0, \"z\": 0.0 }},\n                \"Direction\": {{ \"x\": 0.0, \"y\": 0.0, \"z\": 1.0 }}\n            }},\n            \"InitialAttributeValues\": [\n                {{ \"Attribute\": \"VALUE\", \"Value\": \"0.0\" }},\n                {{ \"Attribute\": \"FIXED\", \"Value\": \"false\" }}\n            ],\n            \"PositionResolution\": 0,\n            \"AllowsForInfiniteRotation\": false,\n            \"TransitionTimeInMs\": 0\n        }}";
+            case "TouchArea":
+                return
+$"        {{\n            \"Type\": \"TouchArea\",\n            \"Name\": \"{name}\",\n            \"Plane\": {{ \"x\": 0.0, \"y\": 0.0, \"z\": 1.0 }},\n            \"Resolution\": {{ \"x\": 0.0, \"y\": 0.0 }}\n        }}";
+            case "Movable":
+                return
+$"        {{\n            \"Type\": \"Movable\",\n            \"Name\": \"{name}\",\n            \"InitialAttributeValues\": [\n                {{ \"Attribute\": \"POSITION\", \"Value\": \"(0.0,0.0,0.0)\" }},\n                {{ \"Attribute\": \"ROTATION\", \"Value\": \"(0.0,0.0,0.0)\" }}\n            ],\n            \"SnapPoses\": [],\n            \"TransitionTimeInMs\": 0\n        }}";
+            default:
+                return
+$"        {{\n            \"Type\": \"Button\",\n            \"Name\": \"{name}\"\n        }}";
         }
     }
 
@@ -176,3 +227,4 @@ public class GenerateInteractionsWindow : EditorWindow
     }
 }
 #endif
+
