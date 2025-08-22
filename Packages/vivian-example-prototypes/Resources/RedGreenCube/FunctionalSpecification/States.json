@@ -1,0 +1,19 @@
+{
+  "States": [
+    {
+      "Name": "idle.state",
+      "Conditions": [
+        {
+          "Type": "FloatValueVisualization",
+          "VisualizationElement": "Cube_Red",
+          "Value": 1.0
+        },
+        {
+          "Type": "FloatValueVisualization",
+          "VisualizationElement": "Cube_Green",
+          "Value": 1.0
+        }
+      ]
+    }
+  ]
+}

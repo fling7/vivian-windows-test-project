@@ -1,0 +1,22 @@
+{
+  "Elements": [
+    {
+      "Type": "Rotatable",
+      "Name": "CubeRotatable",
+      "MinRotation": 0.0,
+      "MaxRotation": 360.0,
+      "RotationAxis": {
+        "Origin": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "Direction": {
+          "x": 0.0,
+          "y": 1.0,
+          "z": 0.0
+        }
+      }
+    }
+  ]
+}

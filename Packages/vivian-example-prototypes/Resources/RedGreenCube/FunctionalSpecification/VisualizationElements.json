@@ -1,0 +1,12 @@
+{
+  "Elements": [
+    {
+      "Type": "AppearingObject",
+      "Name": "Cube_Red"
+    },
+    {
+      "Type": "AppearingObject",
+      "Name": "Cube_Green"
+    }
+  ]
+}

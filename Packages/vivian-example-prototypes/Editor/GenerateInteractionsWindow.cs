@@ -5,6 +5,7 @@ using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 using System.IO;
 using System.Diagnostics;
+using Debug = UnityEngine.Debug;
 
 public class GenerateInteractionsWindow : EditorWindow
 {
@@ -144,38 +145,80 @@ public class GenerateInteractionsWindow : EditorWindow
     }
 
     private void CreateInteractionObjects()
+{
+    string basePath = "Packages/vivian-example-prototypes/Resources";
+    string groupPath = Path.Combine(basePath, _groupName);
+
+    // 1) Nur den Group-Ordner anlegen (keine Unterordner)
+    Directory.CreateDirectory(groupPath);
+    string groupPathUnity = groupPath.Replace("\\", "/");
+
+    // 2) Alte Prefabs in diesem Group-Ordner aufräumen (verhindert "zwei Prefabs" durch Altbestand)
+    //    Hinweis: lässt "scene prefab.prefab" notfalls stehen – wir überschreiben es gleich ohnehin.
+    string[] guids = AssetDatabase.FindAssets("t:Prefab", new[] { groupPathUnity });
+    foreach (var guid in guids)
     {
-        string basePath = "Packages/vivian-example-prototypes/Resources";
-        string groupPath = Path.Combine(basePath, _groupName);
-        string prefabFolder = Path.Combine(groupPath, "Prefabs");
-        string materialsFolder = Path.Combine(groupPath, "Materials");
-        string texturesFolder = Path.Combine(groupPath, "Textures");
-
-        Directory.CreateDirectory(prefabFolder);
-        Directory.CreateDirectory(materialsFolder);
-        Directory.CreateDirectory(texturesFolder);
-
-        GameObject root = new GameObject(_groupName);
-        foreach (var go in _selectedObjects)
+        string path = AssetDatabase.GUIDToAssetPath(guid);
+        if (!string.IsNullOrEmpty(path) && path.StartsWith(groupPathUnity))
         {
-            GameObject copy = Instantiate(go);
-            copy.transform.SetParent(root.transform, true);
+            AssetDatabase.DeleteAsset(path);
         }
-
-        string prefabPath = Path.Combine(prefabFolder, _groupName + ".prefab");
-        PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
-        DestroyImmediate(root);
-
-        AssetDatabase.Refresh();
-        var prefabAsset = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
-        PrefabUtility.InstantiatePrefab(prefabAsset);
-
-        RunPythonGenerator();
     }
+
+    // 3) Nur Top-Level-Objekte übernehmen (kein Parent+Child doppelt)
+    var topLevel = GetTopLevelOnly(_selectedObjects);
+
+    // 4) Sammel-Root für das Prefab bauen
+    GameObject root = new GameObject("sceneprefab");
+
+    // 5) Ausgewählte Top-Level-Objekte klonen und unter Root hängen (Namen beibehalten)
+    foreach (var go in topLevel)
+    {
+        if (go == null) continue;
+        var clone = Instantiate(go);
+        clone.name = go.name;                 // "(Clone)" entfernen
+        clone.transform.SetParent(root.transform, true); // true: Welttransform beibehalten
+    }
+
+    // 6) Ein einziges Sammel-Prefab speichern (ohne Unterordner)
+    string prefabPath = Path.Combine(groupPath, "sceneprefab.prefab").Replace("\\", "/");
+
+    var existing = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+    if (existing != null)
+    {
+        AssetDatabase.DeleteAsset(prefabPath);
+    }
+
+    PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
+    DestroyImmediate(root);
+
+    AssetDatabase.SaveAssets();
+    AssetDatabase.Refresh();
+
+    // 7) Python-Generator starten (nutzt weiterhin _groupName, _interactionDescription, _selectedObjects)
+    RunPythonGenerator();
+
+    // 8) Originale aus der Szene löschen
+    foreach (var go in topLevel)
+    {
+        if (go != null)
+        {
+            DestroyImmediate(go);
+        }
+    }
+
+    AssetDatabase.SaveAssets();
+    AssetDatabase.Refresh();
+
+    Debug.Log($"Created single prefab: {prefabPath} and removed originals from scene.");
+}
+
+
+
 
     private void RunPythonGenerator()
     {
-        string scriptPath = Path.Combine(Application.dataPath, "..", "generate_interactions.py");
+        string scriptPath = Path.Combine("C:\\Users\\burklo\\Downloads\\specgen_no_cli\\unityconnector.py");
         if (!File.Exists(scriptPath))
         {
             Debug.LogError($"Script not found at {scriptPath}");
@@ -183,7 +226,8 @@ public class GenerateInteractionsWindow : EditorWindow
         }
         string python = "python";
         string escapedDesc = _interactionDescription.Replace("\"", "\\\"");
-        var args = new List<string> { $"\"{scriptPath}\"", $"\"{escapedDesc}\"" };
+        // ⇩⇩⇩ HIER: group name als erstes CLI-Argument
+        var args = new List<string> { $"\"{scriptPath}\"", $"\"{_groupName}\"", $"\"{escapedDesc}\"" };
         foreach (var go in _selectedObjects)
         {
             string type = _interactionTypes[_interactionSelection[go]];
@@ -221,6 +265,7 @@ public class GenerateInteractionsWindow : EditorWindow
         }
     }
 
+
     private void CollectChildren(GameObject go, List<GameObject> list)
     {
         list.Add(go);
@@ -229,6 +274,31 @@ public class GenerateInteractionsWindow : EditorWindow
             CollectChildren(go.transform.GetChild(i).gameObject, list);
         }
     }
+    // Liefert nur Top-Level-Objekte aus einer Auswahl (kein Objekt, dessen Vorfahre ebenfalls ausgewählt ist)
+    private static List<GameObject> GetTopLevelOnly(List<GameObject> selected)
+    {
+        var result = new List<GameObject>();
+        var selectedSet = new HashSet<Transform>();
+        foreach (var go in selected)
+        {
+            if (go != null) selectedSet.Add(go.transform);
+        }
+
+        foreach (var go in selected)
+        {
+            if (go == null) continue;
+            bool hasSelectedAncestor = false;
+            var t = go.transform.parent;
+            while (t != null)
+            {
+                if (selectedSet.Contains(t)) { hasSelectedAncestor = true; break; }
+                t = t.parent;
+            }
+            if (!hasSelectedAncestor) result.Add(go);
+        }
+        return result;
+    }
+
 }
 #endif
 

@@ -1,0 +1,14 @@
+{
+  "States": [
+    {
+      "Name": "idle.state",
+      "Conditions": [
+        {
+          "Type": "FloatValueVisualization",
+          "VisualizationElement": "Rotating_Cube",
+          "Value": 1.0
+        }
+      ]
+    }
+  ]
+}

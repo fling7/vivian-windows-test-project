@@ -1,0 +1,18 @@
+﻿{
+  "States": [
+    {
+      "Name": "idle.state",
+      "Conditions": [
+        { "Type": "FloatValueVisualization", "VisualizationElement": "Cube_Default", "Value": 1.0 },
+        { "Type": "FloatValueVisualization", "VisualizationElement": "Cube_Red",     "Value": 0.0 }
+      ]
+    },
+    {
+      "Name": "touched.state",
+      "Conditions": [
+        { "Type": "FloatValueVisualization", "VisualizationElement": "Cube_Default", "Value": 0.0 },
+        { "Type": "FloatValueVisualization", "VisualizationElement": "Cube_Red",     "Value": 1.0 }
+      ]
+    }
+  ]
+}

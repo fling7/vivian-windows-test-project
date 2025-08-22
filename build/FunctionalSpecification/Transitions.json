@@ -1,0 +1,28 @@
+{
+  "Transitions": [
+    {
+      "SourceState": "idle.state",
+      "DestinationState": "moving.state",
+      "InteractionElement": "CubeMove",
+      "Event": "DRAG_START"
+    },
+    {
+      "SourceState": "moving.state",
+      "DestinationState": "idle.state",
+      "InteractionElement": "CubeMove",
+      "Event": "DRAG_END"
+    },
+    {
+      "SourceState": "idle.state",
+      "DestinationState": "rotating.state",
+      "InteractionElement": "CubeRotate",
+      "Event": "ROTATE_START"
+    },
+    {
+      "SourceState": "rotating.state",
+      "DestinationState": "idle.state",
+      "InteractionElement": "CubeRotate",
+      "Event": "ROTATE_END"
+    }
+  ]
+}

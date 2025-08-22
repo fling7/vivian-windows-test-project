@@ -1,0 +1,16 @@
+{
+  "Transitions": [
+    {
+      "SourceState": "idle.state",
+      "DestinationState": "rotated.state",
+      "InteractionElement": "CubeRotatable",
+      "Event": "ROTATABLE_DRAG_START"
+    },
+    {
+      "SourceState": "rotated.state",
+      "DestinationState": "idle.state",
+      "InteractionElement": "CubeRotatable",
+      "Event": "ROTATABLE_DRAG_END"
+    }
+  ]
+}

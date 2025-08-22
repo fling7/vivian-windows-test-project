@@ -1,0 +1,21 @@
+[START] 2025-08-20T11:55:32.373568 Log gestartet
+[INFO] API_KEY: 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
+[INFO] Starte Generierung …
+[INFO] Lade Dokumentationen …
+[OK] InteractionElementsDocu.md geladen
+[OK] StatesDocu.md geladen
+[OK] TransitionsDocu.md geladen
+[OK] VisualizationElementsDocu.md geladen
+[INFO] Lade bestehende Spezifikationen aus Packages\vivian-example-prototypes\Resources\delete\FunctionalSpecification …
+[OK] InteractionElements.json geladen
+[WARN] States.json nicht gefunden
+[WARN] Transitions.json nicht gefunden
+[WARN] VisualizationElements.json nicht gefunden
+[WARN] VisualizationArrays.json nicht gefunden
+[INFO] Baue Nachrichten für API Request …
+[OK] Nachrichten erstellt
+[INFO] Rufe OpenAI API auf …
+[DEBUG] API_KEY:
+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
+[START] 2025-08-21T11:09:05.626229 Log gestartet
+[INFO] API_KEY: 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

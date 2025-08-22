@@ -1,0 +1,12 @@
+{
+  "Elements": [
+    {
+      "Type": "Movable",
+      "Name": "Testcube1"
+    },
+    {
+      "Type": "Rotatable",
+      "Name": "Testcube2"
+    }
+  ]
+}

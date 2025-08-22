@@ -1,0 +1,16 @@
+﻿{
+  "Transitions": [
+    {
+      "SourceState": "idle.state",
+      "InteractionElement": "CubeTouch",
+      "Event": "TOUCH_START",
+      "DestinationState": "touched.state"
+    },
+    {
+      "SourceState": "touched.state",
+      "InteractionElement": "CubeTouch",
+      "Event": "TOUCH_END",
+      "DestinationState": "idle.state"
+    }
+  ]
+}

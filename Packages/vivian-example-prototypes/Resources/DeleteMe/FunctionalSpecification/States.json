@@ -1,0 +1,34 @@
+{
+  "States": [
+    {
+      "Name": "idle.state",
+      "Conditions": [
+        {
+          "Type": "FloatValueVisualization",
+          "VisualizationElement": "cube_default",
+          "Value": 1.0
+        },
+        {
+          "Type": "FloatValueVisualization",
+          "VisualizationElement": "cube_rotated",
+          "Value": 0.0
+        }
+      ]
+    },
+    {
+      "Name": "rotated.state",
+      "Conditions": [
+        {
+          "Type": "FloatValueVisualization",
+          "VisualizationElement": "cube_default",
+          "Value": 0.0
+        },
+        {
+          "Type": "FloatValueVisualization",
+          "VisualizationElement": "cube_rotated",
+          "Value": 1.0
+        }
+      ]
+    }
+  ]
+}

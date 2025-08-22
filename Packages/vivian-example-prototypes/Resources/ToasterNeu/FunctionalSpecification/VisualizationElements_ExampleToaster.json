@@ -1,0 +1,14 @@
+﻿{
+  "Elements": [
+    {
+      "Type": "AppearingObject",
+      "Name": "Cube_Default",
+      "Value": 1.0
+    },
+    {
+      "Type": "AppearingObject",
+      "Name": "Cube_Red",
+      "Value": 0.0
+    }
+  ]
+}

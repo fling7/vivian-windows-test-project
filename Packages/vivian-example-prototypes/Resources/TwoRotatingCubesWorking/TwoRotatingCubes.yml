@@ -1,0 +1,25 @@
+name: Two rotatable cubes
+objects:
+  Cube_Red: AppearingObject visible by default
+  Cube_Blue: AppearingObject visible by default
+interactions:
+  - type: Rotatable
+    name: Cube_Red_Rotatable
+    min_rotation: -90.0
+    max_rotation: 90.0
+    rotation_axis:
+      origin: {x: 0.0, y: 0.0, z: 0.0}
+      direction: {x: 0.0, y: 1.0, z: 0.0}
+  - type: Rotatable
+    name: Cube_Blue_Rotatable
+    min_rotation: -90.0
+    max_rotation: 90.0
+    rotation_axis:
+      origin: {x: 0.0, y: 0.0, z: 0.0}
+      direction: {x: 0.0, y: 1.0, z: 0.0}
+states:
+  - name: idle.state
+    show:
+      Cube_Red: 1.0
+      Cube_Blue: 1.0
+transitions: []

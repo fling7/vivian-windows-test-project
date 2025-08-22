@@ -1,0 +1,49 @@
+{
+  "States": [
+    {
+      "Name": "idle.state",
+      "Conditions": [
+        {
+          "Type": "FloatValueVisualization",
+          "VisualizationElement": "Testcube1",
+          "Value": 1.0
+        },
+        {
+          "Type": "FloatValueVisualization",
+          "VisualizationElement": "Testcube2",
+          "Value": 1.0
+        }
+      ]
+    },
+    {
+      "Name": "moving.state",
+      "Conditions": [
+        {
+          "Type": "FloatValueVisualization",
+          "VisualizationElement": "Testcube1",
+          "Value": 1.0
+        },
+        {
+          "Type": "FloatValueVisualization",
+          "VisualizationElement": "Testcube2",
+          "Value": 1.0
+        }
+      ]
+    },
+    {
+      "Name": "rotating.state",
+      "Conditions": [
+        {
+          "Type": "FloatValueVisualization",
+          "VisualizationElement": "Testcube1",
+          "Value": 1.0
+        },
+        {
+          "Type": "FloatValueVisualization",
+          "VisualizationElement": "Testcube2",
+          "Value": 1.0
+        }
+      ]
+    }
+  ]
+}

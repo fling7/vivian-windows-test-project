@@ -1,0 +1,14 @@
+{
+  "Elements": [
+    {
+      "Type": "AppearingObject",
+      "Name": "cube_default",
+      "Value": 1.0
+    },
+    {
+      "Type": "AppearingObject",
+      "Name": "cube_rotated",
+      "Value": 0.0
+    }
+  ]
+}
