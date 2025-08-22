@@ -14,4 +14,4 @@ Builds
 
 *.csproj
 *.sln
-*~
+*~generate_interactions.log
