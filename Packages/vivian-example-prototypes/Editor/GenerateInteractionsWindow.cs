@@ -4,7 +4,6 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using System.Diagnostics;
 
 public class GenerateInteractionsWindow : EditorWindow
@@ -151,36 +150,10 @@ public class GenerateInteractionsWindow : EditorWindow
         string prefabFolder = Path.Combine(groupPath, "Prefabs");
         string materialsFolder = Path.Combine(groupPath, "Materials");
         string texturesFolder = Path.Combine(groupPath, "Textures");
-        string specFolder = Path.Combine(groupPath, "FunctionalSpecification");
 
         Directory.CreateDirectory(prefabFolder);
         Directory.CreateDirectory(materialsFolder);
         Directory.CreateDirectory(texturesFolder);
-        Directory.CreateDirectory(specFolder);
-        string specFile = Path.Combine(specFolder, "InteractionElements.json");
-
-        var json = new StringBuilder();
-        json.AppendLine("{");
-        json.AppendLine("    \"Elements\": [");
-
-        for (int i = 0; i < _selectedObjects.Count; i++)
-        {
-            var go = _selectedObjects[i];
-            string type = _interactionTypes[_interactionSelection[go]];
-            json.Append(BuildElementJson(go.name, type));
-            if (i < _selectedObjects.Count - 1)
-            {
-                json.AppendLine(",");
-            }
-            else
-            {
-                json.AppendLine();
-            }
-        }
-
-        json.AppendLine("    ]");
-        json.AppendLine("}");
-        File.WriteAllText(specFile, json.ToString());
 
         GameObject root = new GameObject(_groupName);
         foreach (var go in _selectedObjects)
@@ -197,10 +170,10 @@ public class GenerateInteractionsWindow : EditorWindow
         var prefabAsset = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
         PrefabUtility.InstantiatePrefab(prefabAsset);
 
-        RunPythonGenerator(specFolder);
+        RunPythonGenerator();
     }
 
-    private void RunPythonGenerator(string specFolder)
+    private void RunPythonGenerator()
     {
         string scriptPath = Path.Combine(Application.dataPath, "..", "generate_interactions.py");
         if (!File.Exists(scriptPath))
@@ -210,10 +183,17 @@ public class GenerateInteractionsWindow : EditorWindow
         }
         string python = "python";
         string escapedDesc = _interactionDescription.Replace("\"", "\\\"");
+        var args = new List<string> { $"\"{scriptPath}\"", $"\"{escapedDesc}\"" };
+        foreach (var go in _selectedObjects)
+        {
+            string type = _interactionTypes[_interactionSelection[go]];
+            args.Add($"\"{go.name}\"");
+            args.Add($"\"{type}\"");
+        }
         var psi = new ProcessStartInfo
         {
             FileName = python,
-            Arguments = $"\"{scriptPath}\" --spec-dir \"{specFolder}\" --description \"{escapedDesc}\"",
+            Arguments = string.Join(" ", args),
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -238,31 +218,6 @@ public class GenerateInteractionsWindow : EditorWindow
         catch (System.Exception e)
         {
             Debug.LogError($"Failed to run python script: {e.Message}");
-        }
-    }
-
-    private string BuildElementJson(string name, string type)
-    {
-        switch (type)
-        {
-            case "ToggleButton":
-                return
-$"        {{\n            \"Type\": \"ToggleButton\",\n            \"Name\": \"{name}\",\n            \"InitialAttributeValues\": [\n                {{ \"Attribute\": \"VALUE\", \"Value\": \"false\" }}\n            ]\n        }}";
-            case "Slider":
-                return
-$"        {{\n            \"Type\": \"Slider\",\n            \"Name\": \"{name}\",\n            \"MinPosition\": {{ \"x\": 0.0, \"y\": 0.0, \"z\": 0.0 }},\n            \"MaxPosition\": {{ \"x\": 0.0, \"y\": 0.0, \"z\": 0.0 }},\n            \"InitialAttributeValues\": [\n                {{ \"Attribute\": \"VALUE\", \"Value\": \"0.0\" }},\n                {{ \"Attribute\": \"FIXED\", \"Value\": \"false\" }}\n            ],\n            \"PositionResolution\": 0,\n            \"TransitionTimeInMs\": 0\n        }}";
-            case "Rotatable":
-                return
-$"        {{\n            \"Type\": \"Rotatable\",\n            \"Name\": \"{name}\",\n            \"MinRotation\": 0.0,\n            \"MaxRotation\": 0.0,\n            \"RotationAxis\": {{\n                \"Origin\": {{ \"x\": 0.0, \"y\": 0.0, \"z\": 0.0 }},\n                \"Direction\": {{ \"x\": 0.0, \"y\": 0.0, \"z\": 1.0 }}\n            }},\n            \"InitialAttributeValues\": [\n                {{ \"Attribute\": \"VALUE\", \"Value\": \"0.0\" }},\n                {{ \"Attribute\": \"FIXED\", \"Value\": \"false\" }}\n            ],\n            \"PositionResolution\": 0,\n            \"AllowsForInfiniteRotation\": false,\n            \"TransitionTimeInMs\": 0\n        }}";
-            case "TouchArea":
-                return
-$"        {{\n            \"Type\": \"TouchArea\",\n            \"Name\": \"{name}\",\n            \"Plane\": {{ \"x\": 0.0, \"y\": 0.0, \"z\": 1.0 }},\n            \"Resolution\": {{ \"x\": 0.0, \"y\": 0.0 }}\n        }}";
-            case "Movable":
-                return
-$"        {{\n            \"Type\": \"Movable\",\n            \"Name\": \"{name}\",\n            \"InitialAttributeValues\": [\n                {{ \"Attribute\": \"POSITION\", \"Value\": \"(0.0,0.0,0.0)\" }},\n                {{ \"Attribute\": \"ROTATION\", \"Value\": \"(0.0,0.0,0.0)\" }}\n            ],\n            \"SnapPoses\": [],\n            \"TransitionTimeInMs\": 0\n        }}";
-            default:
-                return
-$"        {{\n            \"Type\": \"Button\",\n            \"Name\": \"{name}\"\n        }}";
         }
     }
 
