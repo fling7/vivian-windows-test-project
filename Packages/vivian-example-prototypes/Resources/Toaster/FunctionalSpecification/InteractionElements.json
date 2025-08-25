@@ -51,6 +51,24 @@
       "PositionResolution": 2
     },
     {
+      "Type": "Slider",
+      "Name": "Handle2",
+      "InitialAttributeValues": [
+        { "Attribute": "VALUE", "Value": "0.0" }
+      ],
+      "MinPosition": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "MaxPosition": {
+        "x": 0.05,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "PositionResolution": 2
+    },
+    {
       "Type": "Rotatable",
       "Name": "RotaryButton",
       "InitialAttributeValues": [
